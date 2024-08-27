@@ -9,7 +9,13 @@ Erlege den Wumpus mit deinem Pfeil oder sterbe durch
 gefressen vom Wumpus oder zu oft in eine Grube gefallen oder vom eigenen Pfeil getroffen
 */
 
-import java.util.*;
+import data.InputScanner;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.Objects;
+import java.util.Random;
 
 public class Wumpus {
 
@@ -17,9 +23,11 @@ public class Wumpus {
 
         Random random = new Random();
 
-        boolean autotest = false;
+        boolean autotest = true;
+        boolean debug = false;
+        boolean showcavesindebug = true;
 
-        Input input = Input.getInstance();
+        InputScanner input = InputScanner.getInstance();
 
         int countCaves;
         int countConnections;
@@ -112,8 +120,6 @@ public class Wumpus {
         int countLives = Math.max(5, (random.nextInt(1, countCaves+1) / 100));
         int countArrows = Math.max(5, (random.nextInt(1, countCaves+1) / 100));
 
-        boolean debug = false;
-        boolean showcavesindebug = true;
         String action;
         do {
             // Ausgabe Position und Umgebung (Nachbarhöhlen und eventuell Wumpus) und Frage nach Aktion
@@ -125,8 +131,16 @@ public class Wumpus {
             System.out.println(pewms);
             if (autotest) {
                 debug = true;
-                int actionI = random.nextInt(1, countCaves + 1);
-                int sign = random.nextInt(1, 8);
+                //  nun ja, erst mit C++, habe ich die zu große Zufälligkeit bemerkt
+                // ich sollte mich nur vorschriftsgemäß bewegen und nur schießen, wenn auch Wumpus in der Nähe ist
+                int actionI;
+                do {
+                    actionI = random.nextInt(1, countCaves + 1);
+                } while ( ! Arrays.asList(caves[focus[0] - 1]).contains(actionI));
+                int sign = 0;
+                if (wumpusIsNear) {
+                    sign = random.nextInt(1, 8);
+                }
                 actionI = (sign == 1) ? -actionI : actionI;
                 action = Integer.toString(actionI);
                 System.out.println("Deine Wahl ist " + action);
@@ -180,12 +194,12 @@ public class Wumpus {
                         if (target[0] == nextcave) {
                             // Schuss in erreichbare Höhle, jetzt alle Höhlen bis dahin auf Wumpus testen
                             for (Integer c : target) {
-                                if (c == focus[1]) {
+                                if ((c != null) && (c.equals(focus[1]))) {
                                     System.out.println("Du hast den Wumpus erschossen!");
                                     System.exit(0);
                                 }
                             }
-                        } else if (target[0] == focus[0]) {
+                        } else if (target[0].equals(focus[0])) {
                                     System.out.println("Du hast Dich selber erschossen!");
                                     System.exit(0);
                         }
@@ -243,7 +257,7 @@ public class Wumpus {
                         // wenn Wumpus in Nachbarhöhle, dann kann er sich bewegen und dann auch zu Dir mit etwas höherer Wahrscheinlichkeit
                         if (Arrays.asList(caves[focus[0] - 1]).contains(focus[1])) {
                             wumpusChangeCave(autotest, focus, caves, countBats, random, 5);
-                            if (focus[1] == focus[0]) {
+                            if (focus[1].equals(focus[0])) {
                                 System.out.println("Wumpus hat Dich getötet!");
                                 System.exit(0);
                             }
@@ -274,7 +288,8 @@ public class Wumpus {
         Integer newcave = null;
         int start = focus[1];
         while (newcave == null) {
-            while ((weight > 0) && (newcave != focus[0])) {
+            //while ((weight > 0) && ( newcave != focus[0])) {
+            while (weight > 0 && (newcave == null || ! newcave.equals(focus[0]))) {
                 newcave = caves[start - 1][random.nextInt(0, caves[0].length)];
                 if (newcave != null) {
                     start = newcave;
@@ -285,7 +300,7 @@ public class Wumpus {
         focus[1] = newcave;
         // werden Fledermäuse vertrieben?
         for (int b = 0; b < countBats; b++) {
-            if (focus[2 + b] == focus[1]) {
+            if (focus[2 + b].equals(focus[1])) {
                 batChangeCave(autotest, -1, focus[1], -1, -1, focus, b, caves, random);
             }
         }
@@ -314,7 +329,7 @@ public class Wumpus {
                 }
             }
         }
-        while (focus[1] == newcave) {
+        while (focus[1].equals(newcave)) {
             // die Fledermaus fliegt nicht zum Wumpus
             newcave = batChangeCave(autotest, -1, newcave, -1, -1, focus, whichbat, caves, random);
         }
@@ -324,7 +339,7 @@ public class Wumpus {
 
     private static boolean wumpusIsNear(Integer[][] caves, int me, int wumpus) {
         boolean wumpusIsNear = Arrays.asList(caves[me - 1]).contains(wumpus);
-        if (wumpusIsNear) { return wumpusIsNear; };
+        if (wumpusIsNear) { return wumpusIsNear; }
         for (int w = 0; w < caves[me - 1].length; w++) {
             if (caves[me - 1][w] != null) {
                 wumpusIsNear = wumpusIsNear || Arrays.asList(caves[caves[me - 1][w] - 1]).contains(wumpus);
@@ -340,7 +355,7 @@ public class Wumpus {
         boolean batsOrPitsAreNear = false;
         for (int s : subfocus) {
             batsOrPitsAreNear = batsOrPitsAreNear || Arrays.asList(caves[me - 1]).contains(s);
-            if (batsOrPitsAreNear) { return batsOrPitsAreNear; };
+            if (batsOrPitsAreNear) { return batsOrPitsAreNear; }
         }
         return batsOrPitsAreNear;
     }
@@ -356,8 +371,8 @@ public class Wumpus {
         if (autotest) {
             System.out.println("trueTarget");
         }
-        ArrayList<Integer> searched = new ArrayList();
-        ArrayList<Integer> path = new ArrayList();
+        ArrayList<Integer> searched = new ArrayList<>();
+        ArrayList<Integer> path = new ArrayList<>();
         searched.add(me);
         path.add(0);
         int start = 0;
@@ -376,7 +391,7 @@ public class Wumpus {
                     if (cave != null) {
                         searched.add(cave);
                         path.add(actualpath + c + 1);
-                        if (cave == target) {
+                        if (cave.equals(target)) {
                             trueTarget[0] = cave;
                             fullpath = path.getLast();
                             break breakpoint;
@@ -396,7 +411,7 @@ public class Wumpus {
                     trueTarget[start] = searched.get(r);
                     fullpath = fullpath / 10;
                     start++;
-                };
+                }
             }
         } else {
             trueTarget[0] = searched.getLast();
@@ -410,13 +425,13 @@ public class Wumpus {
     }
 
     private static String printWithoutNull(Integer[] caves) {
-        String printWithoutNull = " ";
+        StringBuilder printWithoutNull = new StringBuilder(" ");
         for (Integer cave : caves) {
             if (cave != null) {
-                printWithoutNull = printWithoutNull + cave + " ";
+                printWithoutNull.append(cave).append(" ");
             }
     }
-        return printWithoutNull;
+        return printWithoutNull.toString();
     }
 
     private static boolean cavesAreNotConsistent(Integer[][] caves) {
@@ -440,6 +455,11 @@ public class Wumpus {
     }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    /*
+
     // nicht mehr benötigt dank
     // Arrays.sort(caves[i], Comparator.nullsLast(Comparator.naturalOrder()));
 
@@ -471,4 +491,6 @@ public class Wumpus {
             }
         }
     }
+    */
+
 }

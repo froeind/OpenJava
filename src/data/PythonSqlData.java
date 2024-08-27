@@ -1,33 +1,103 @@
+package data;
 
-import data.PythonFileData;
-import data.PythonSqlData;
+import java.sql.Connection;
+import java.sql.Statement;
+import java.sql.ResultSet;
+import java.sql.DriverManager;
+import java.sql.SQLException;
 
-import java.util.Arrays;
+public class PythonSqlData {
 
-public class Python {
-    public static void main(String[] args) {
+    private Connection connection = null;
+    private Statement statement = null;
+    private ResultSet resultSet = null;
+    private boolean created = false;
 
-        PythonFileData fileData = new PythonFileData();
-        fileData.initialLoadFromFile();
-        for (Float[] data : fileData.datalist) {
-            System.out.println(Arrays.toString(data));
+    public PythonSqlData() {
+        try {
+            // Load SQLite JDBC driver
+            //Class.forName("org.sqlite.JDBC");
+            // Establish connection to SQLite database
+            this.connection = DriverManager.getConnection("jdbc:sqlite:src//data//java_confanddata.sqlite3");
+            // Create a statement to execute SQL query
+            this.statement = this.connection.createStatement();
+            if ( ! this.created) {
+                String sql = """
+                CREATE TABLE IF NOT EXISTS configuration (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                key TEXT NOT NULL UNIQUE,
+                ivalue INTEGER,
+                rvalue REAL,
+                tvalue TEXT)
+                """;
+                this.statement.execute(sql);
+                sql = """
+                CREATE TABLE IF NOT EXISTS dataki1 (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                key TEXT NOT NULL UNIQUE,
+                rvalue1 REAL,
+                rvalue2 REAL,
+                rvalue3 REAL,
+                rvalue4 REAL,
+                rvalue5 REAL,
+                rvalue6 REAL,
+                bvalue1 INTEGER,
+                bvalue2 INTEGER)
+                """;
+                this.statement.execute(sql);
+            }
+            this.created = true;
+        } catch (SQLException e) {
+            e.printStackTrace();
         }
-        System.out.println(fileData.datalist.size());
-
-        PythonSqlData sqlData = new PythonSqlData();
-        sqlData.showData("configuration");
-        sqlData.showData("dataki1");
-        sqlData.closeDb();
-
     }
-}
 
-/*
-import java.sql.*;
+    public void closeDb() {
+        if (this.created) {
+            try {
+                this.connection.close();
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+    }
 
-public class SQLiteExample {
+    public void showData(String table) {
+        try {
+            this.resultSet = this.statement.executeQuery("SELECT * FROM " + table);
+            if ( table.equals("configuration") ) {
+                while (this.resultSet.next()) {
+                    Integer id = this.resultSet.getInt("id");
+                    String key = this.resultSet.getString("key");
+                    Integer ivalue = this.resultSet.getInt("ivalue");
+                    Float rvalue = this.resultSet.getFloat("rvalue");
+                    String tvalue = this.resultSet.getString("tvalue");
+                    System.out.println("id: " + id + ", key: " + key + ", ivalue: " + ivalue + ", rvalue: " + rvalue + ", tvalue: " + tvalue);
+                }
+            } else {
+                while (this.resultSet.next()) {
+                    Integer id = this.resultSet.getInt("id");
+                    String key = this.resultSet.getString("key");
+                    Float rvalue1 = this.resultSet.getFloat("rvalue1");
+                    Float rvalue2 = this.resultSet.getFloat("rvalue2");
+                    Float rvalue3 = this.resultSet.getFloat("rvalue3");
+                    Float rvalue4 = this.resultSet.getFloat("rvalue4");
+                    Float rvalue5 = this.resultSet.getFloat("rvalue5");
+                    Float rvalue6 = this.resultSet.getFloat("rvalue6");
+                    Integer bvalue1 = this.resultSet.getInt("bvalue1");
+                    Integer bvalue2 = this.resultSet.getInt("bvalue2");
+                    System.out.println("id: " + id + ", key: " + key + ", rvalue1: " + rvalue1 + ", rvalue2: " + rvalue2 + ", rvalue3: " + rvalue3 + ", rvalue4: " + rvalue4 + ", rvalue5: " + rvalue5 + ", rvalue6: " + rvalue6 + ", bvalue1: " + bvalue1 + ", bvalue2: " + bvalue2);
+                }
+            }
+            // Close result set
+            this.resultSet.close();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
 
-    public static void main(String[] args) {
+
+      public static void main(String[] args) {
         try {
             // Load SQLite JDBC driver
             Class.forName("org.sqlite.JDBC");
@@ -58,51 +128,13 @@ public class SQLiteExample {
         }
     }
 }
- */
 
 /*
 
-import sqlite3
-
-class confanddata:
-
-    con = None
-    cur = None
-
-    created = False
-
-    def opendb(self):
-        self.con = sqlite3.connect("universalframe_confanddata.sqlite3")
-        self.cur = self.con.cursor()
-        if not self.created:
-            self.con.execute("""CREATE TABLE IF NOT EXISTS configuration (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    key TEXT NOT NULL UNIQUE,
-                    ivalue INTEGER,
-                    rvalue REAL,
-                    tvalue TEXT
-                    )""")
-            self.con.commit()
-            self.con.execute("""CREATE TABLE IF NOT EXISTS dataki1 (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    key TEXT NOT NULL UNIQUE,
-                    rvalue1 REAL,
-                    rvalue2 REAL,
-                    rvalue3 REAL,
-                    rvalue4 REAL,
-                    rvalue5 REAL,
-                    rvalue6 REAL,
-                    bvalue1 INTEGER,
-                    bvalue2 INTEGER
-                    )""")
-            self.con.commit()
-            self.created = True
-
-    def closedb(self): self.con.close()
 
     def droptables(self, tables):
         for table in tables:
-            try: res = self.con.execute("DROP TABLE " + table)
+            try: res = this.connection.execute("DROP TABLE " + table)
             except: pass
 
     def setvalues(self, table: str, keyandvalues: list, field: str = "") -> int:
@@ -138,28 +170,28 @@ class confanddata:
                 if field == "":
                     try:
                         #print(f"INSERT INTO {table}{fields} VALUES{values}")
-                        self.con.execute(f"INSERT INTO {table}{fields} VALUES{values}", row)
+                        this.connection.execute(f"INSERT INTO {table}{fields} VALUES{values}", row)
                         # executemany erst mal gestrichen, weil bei Nicht-Eindeutigkeit crasht das Ganze
-                        self.con.commit()
+                        this.connection.commit()
                     except:
                         if table == "configuration": setvalues = f"ivalue={row[1]}, rvalue={row[2]}, tvalue='{row[3]}'"
                         elif table == "dataki1": setvalues = f"rvalue1={row[1]}, rvalue2={row[2]}, rvalue3={row[3]}, rvalue4={row[4]}, rvalue5={row[5]}, rvalue6={row[6]}, bvalue1={row[7]}, bvalue2={row[8]}"
                         else: break
                         try:
                             #print(f"UPDATE {table} SET {setvalues} WHERE key='{row[0]}'")
-                            self.con.execute(f"UPDATE {table} SET {setvalues} WHERE key='{row[0]}'")
-                            self.con.commit()
+                            this.connection.execute(f"UPDATE {table} SET {setvalues} WHERE key='{row[0]}'")
+                            this.connection.commit()
                         except: notset += 1
                 else:
                     try:
-                        self.con.execute(f"INSERT INTO {table}(key,{field}) VALUES(?, ?)", row)
-                        self.con.commit()
+                        this.connection.execute(f"INSERT INTO {table}(key,{field}) VALUES(?, ?)", row)
+                        this.connection.commit()
                     except:
                         if field[:6] == "tvalue": textmarker = "'"
                         else: textmarker = ""
                         try:
-                            self.con.execute(f"UPDATE {table} SET {field}={textmarker}{row[1]}{textmarker} WHERE key='{row[0]}'")
-                            self.con.commit()
+                            this.connection.execute(f"UPDATE {table} SET {field}={textmarker}{row[1]}{textmarker} WHERE key='{row[0]}'")
+                            this.connection.commit()
                         except: notset += 1
             return notset
 
@@ -179,7 +211,7 @@ class confanddata:
             if table == "configuration": fields = "key, ivalue, rvalue, tvalue"
             elif table == "dataki1": fields = "key, rvalue1, rvalue2, rvalue3, rvalue4, rvalue5, rvalue6, bvalue1, bvalue2"
             else: fields = "*"
-            res = self.con.execute(f"SELECT {fields} FROM {table}")
+            res = this.connection.execute(f"SELECT {fields} FROM {table}")
             rows = res.fetchall()
             return rows
         else:
@@ -187,13 +219,13 @@ class confanddata:
             keyvalue = lambda keys: "'" + keys + "'" if isinstance(keys, str) else keys
             if field == "":
                 #print(f"SELECT * FROM {table}} WHERE key {operation(keys)} {keyvalue(keys)}")
-                res = self.con.execute(f"SELECT * FROM {table} WHERE key {operation(keys)} {keyvalue(keys)}")
+                res = this.connection.execute(f"SELECT * FROM {table} WHERE key {operation(keys)} {keyvalue(keys)}")
                 rows = res.fetchall()
                 # das gebe ich so aus wie es ist
                 return rows
             else:
                 #print(f"SELECT {field} FROM {table} WHERE key {operation(keys)} {keyvalue(keys)}")
-                res = self.con.execute(f"SELECT {field} FROM {table} WHERE key {operation(keys)} {keyvalue(keys)}")
+                res = this.connection.execute(f"SELECT {field} FROM {table} WHERE key {operation(keys)} {keyvalue(keys)}")
                 rows = res.fetchall()
                 # das wandle ich in eine aufgeräumte Liste um
                 if rows != []: rows = [x[0] for x in rows]
@@ -217,15 +249,15 @@ class confanddata:
             for key in keys: query += f"(key LIKE '{key}') OR "
             query = query[:len(query)-4]
             #print(f"SELECT COUNT(*) FROM {table}} WHERE {query}")
-            res = self.con.execute(f"SELECT COUNT(*) FROM {table} WHERE {query}")
+            res = this.connection.execute(f"SELECT COUNT(*) FROM {table} WHERE {query}")
         elif keys == "":
             #print(f"SELECT COUNT(*) FROM {table}")
-            res = self.con.execute(f"SELECT COUNT(*) FROM {table}")
+            res = this.connection.execute(f"SELECT COUNT(*) FROM {table}")
         else:
             operation = lambda keys: "=" if isinstance(keys, str) else "in"
             keyvalue = lambda keys: "'" + keys + "'" if isinstance(keys, str) else keys
             #print(f"SELECT COUNT(*) FROM {table} WHERE key {operation(keys)} {keyvalue(keys)}")
-            res = self.con.execute(f"SELECT COUNT(*) FROM {table} WHERE key {operation(keys)} {keyvalue(keys)}")
+            res = this.connection.execute(f"SELECT COUNT(*) FROM {table} WHERE key {operation(keys)} {keyvalue(keys)}")
         rows = res.fetchone()
         # das gebe ich so aus wie es ist
         return rows[0]

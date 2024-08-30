@@ -1,4 +1,5 @@
 import java.util.ArrayList;
+//import java.util.Arrays;
 //import java.util.List;
 
 public class Euler896 {
@@ -14,7 +15,9 @@ public class Euler896 {
 
     public static void show(ArrayList<Long>[] teiler, ArrayList<Integer> nochNichtGefunden) {
         for (int i = 1; i < teiler.length; ++i) {
-            System.out.println(teiler[i]);
+            if (nochNichtGefunden.contains((Integer) i)) {
+                System.out.println(teiler[i]);
+            }
         }
         System.out.println("Break für " + nochNichtGefunden);
         System.out.println();
@@ -46,7 +49,58 @@ public class Euler896 {
         }
     }
 
-    public static boolean checkAufDivisible(ArrayList<Long>[] teiler, boolean aufwaertsAuswaehlen) {
+    public static boolean checkAufDivisiblePerm(ArrayList<Long>[] teilerPerm, ArrayList<Integer> sizesPerm, ArrayList<Integer> iteratePerm) {
+        boolean isDivisible = false;
+        while (true) {
+            isDivisible = true;
+            for (int i = 2; i < teilerPerm.length - 1; ++i) {
+                if (teilerPerm[i].size() > 1) {
+                    // gäbe es nur einen Wert, dann hätte ich ihn bei den Solitärbetrachtungen schon bearbeitet
+                    long zahl = teilerPerm[i].get(iteratePerm.get(i) - 1);
+                    if (zahl > 0) {
+                        // diese Kombination geht, also alle Auftreten negativ setzen, wie gewohnt
+                        blockZahl(teilerPerm, zahl);
+                    } else {
+                        // diese Kombination geht nicht
+                        // also kann ich einen break machen, die Negierungen wieder aufheben, danach die Abbruchbedingung durch Inkrementierung berechnen und überprüfen
+                        isDivisible = false;
+                        break;
+                    }
+                }
+            }
+            if (isDivisible) {
+                // eine Lösung gefunden
+                return true;
+            }
+            // die Negierungen wieder aufheben
+            for (int i = 2; i < teilerPerm.length - 1; ++i) {
+                teilerPerm[i].replaceAll(Math::abs);
+            }
+            // Inkrementierung berechnen und überprüfen
+            for (int i = 0; i < iteratePerm.size(); ++i) {
+                int inc = iteratePerm.get(i);
+                if (inc > 0) {
+                    // nur gültiges Fach nehmen
+                    ++inc;
+                    if (inc <= sizesPerm.get(i)) {
+                        // es kann noch hochgezählt werden
+                        iteratePerm.set(i, inc);
+                        // und die Schleife ist beendet
+                        break;
+                    } else {
+                        // weiter geht es nicht, also wieder zurücksetzen und nächstes Fach hochzählen (im nächsten Schleifendurchlauf), wenn es eines gibt
+                        iteratePerm.set(i, 1);
+                        if (i == iteratePerm.size() - 1) {
+                            // letztes Fach erreicht, Ende der Fahnenstange
+                            return false;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    public static boolean checkAufDivisible(ArrayList<Long>[] teiler) {
         // zuerst teste ich, ob es eine leere Vielfachenkette gibt
         // dann bin ich schon negativ durch
         // diesen Test könnte ich auch innerhalb der nächsten Schleifenkonstruktion machen
@@ -56,7 +110,8 @@ public class Euler896 {
                 return false;
             }
         }
-        // dann alles von hinten kommend wegstreichen, was eindeutig zu machen ist und gemacht werden muss
+        show(teiler);
+        // dann alles vom Ende kommend wegstreichen, was eindeutig zu machen ist und gemacht werden muss
         // dazu negiere ich die Zahlen absteigend, so dass sie als Vielfache der Teiler für weitere Betrachtungen ausgeschlossen werden
         // und ich muss mir natürlich merken, was ich gefunden habe
         ArrayList<Integer> nochNichtGefunden = new ArrayList<>();
@@ -64,7 +119,9 @@ public class Euler896 {
         // aber ob das die Stagnation auf Position 5 verbessert? Ja, aber meine Start-Zahl-Lösung ist immer noch falsch
         // immerhin reduziert es die Auswahlmöglichkeiten an den anderen Plätzen
         // und hier muss ich auch schon die Breaks initialisieren und für die Solitäre gleich wieder freigeben
-        for (int i = teiler.length - 1; i > 0; --i) {
+        // hier brauche ich das 1er-Fach nicht betrachten (das 2er und 3er aber schon, da kann es wie gesehen Konflikte geben, und alle weiteren Fächer auch)
+        // also bis "i > 1"
+        for (int i = teiler.length - 1; i > 1; --i) {
             nochNichtGefunden.add(i);
             if (teiler[i].size() == 1) {
                 // statt über Index über den Wert entfernen
@@ -72,129 +129,126 @@ public class Euler896 {
                 blockZahl(teiler, teiler[i].getFirst());
             }
         }
-        System.out.print("Nach Solitärentfernung in eindimensionalem Fach: ");
+        System.out.println("Nach Entfernung aller Fächer für die es von Anfang an nur eine Möglichkeit gab: ");
         show(teiler, nochNichtGefunden);
-        // tja und dann eigentlich für alle anderen mit Mindestlänge 2 auch dort Solitäre suchen, solange bis es keine mehr gibt
+        // tja und dann eigentlich für alle anderen mit Mindestlänge 2 auch dort Solitäre "zweiter Wahl" suchen, solange bis es keine mehr gibt
         // das steht hier an zweiter Stelle, weil diese Solitäre auch eindeutig ermittelbar sind,
         // weil es ja keine Alternative zu ihnen gibt, sie sind ja hier das einzig verfügbare Vielfache
+        // weil alle anderen Vielfachen im Teilerfach schon geblockt sind
+        // auch hier "i > 1"
+        // aber was ich vergessen hatte:
+        // ich darf nur unerledigte Fächer durchlaufen, ansonsten würde das "doppelt" erledigt und Zahlen fallen weg
         boolean nochNichtFertig = true;
         while (nochNichtFertig) {
             nochNichtFertig = false;
-            for (int i = teiler.length - 1; i > 0; --i) {
-                if (teiler[i].size() > 1) {
-                    // Solitäre suchen
-                    int countPositiv = 0;
-                    long solitaer = -1;
-                    for (int j = 0; j < teiler[i].size(); ++j) {
-                        long zahl = teiler[i].get(j);
-                        if (zahl > 0) {
-                            ++countPositiv;
-                            solitaer = zahl;
+            for (int i = teiler.length - 1; i > 1; --i) {
+                if (nochNichtGefunden.contains((Integer) i)) {
+                    if (teiler[i].size() > 1) {
+                        // Solitäre suchen
+                        int countPositiv = 0;
+                        long solitaer = -1;
+                        for (int j = 0; j < teiler[i].size(); ++j) {
+                            long zahl = teiler[i].get(j);
+                            if (zahl > 0) {
+                                ++countPositiv;
+                                solitaer = zahl;
+                            }
                         }
-                    }
-                    if (countPositiv == 1) {
-                        // statt über Index über den Wert entfernen
-                        nochNichtGefunden.remove((Integer) i);
-                        blockZahl(teiler, solitaer);
-                        nochNichtFertig = true;
+                        if (countPositiv == 1) {
+                            // statt über Index über den Wert entfernen
+                            nochNichtGefunden.remove((Integer) i);
+                            blockZahl(teiler, solitaer);
+                            nochNichtFertig = true;
+                        }
                     }
                 }
             }
         }
-        System.out.print("Nach Solitärentfernung in mehrdimensionalem Fach: ");
+        System.out.println("Nach Entfernung aller Fächer für die es sukzessive dann nur noch eine Möglichkeit gab: ");
         show(teiler, nochNichtGefunden);
-        // und dann als drittes nochmal für alle anderen mit Mindestlänge 2 auch indirekte Solitäre suchen, da reicht ein Durchlauf, weil da nichts sich ändert
+        // und dann als drittes nochmal für alle anderen mit Mindestlänge 2 auch indirekte Solitäre suchen, da reicht ein Durchlauf, weil sich da dabei nichts ändert
         // indirekte Solitäre sind Zahlen, die nur in diesem einen Fach auftauchen (außer dem 1er-Fach natürlich), also teilerfremd zu den anderen Fächern sind
         // wenn ich das weiter verfeinere, dann lande ich bei den Ausnahmefächern 2 und 3, da sind ja immer ganz viele dabei, und auch 5 oder 7
         // aber letztendlich käme ich vielleicht nicht drumrum, dann doch die Permutationen für die Auswahlen anzugehen, aber da habe ich keine Lust
+        // auch hier "i > 1" und auch hier betrachte ich nur unerledigte Fächer
+        // wenn ich auch erledigte betrachte und dort einen indirekten Solitär hätte, dann kann ich nämlich nicht einfach den Test abbrechen,
+        // weil ich das 1er-Fach ja nicht betrachte und dort alle Zahlen drin sind, d.h. es gibt ja eigentlich gar keine "richtigen" Solitäre
+        // ausgenommen den Primzahlen größer der größten Zahl, die sitzen nur im 1er-Fach und bei mehr als zwei wird das ja schon außerhalb geregelt
+        // ABER ich habe dabei einen Denkfehler gemacht:
+        // wer sagt denn, dass dieser indirekte Solitär nicht im 1er-Fach benötigt wird, d.h. diese Auwahl darf ich eben nicht treffen
+        /*
         for (int i = teiler.length - 1; i > 1; --i) {
-            if (teiler[i].size() > 1) {
-                // indirekten Solitär suchen
-                for (int j = 0; j < teiler[i].size(); ++j) {
-                    boolean iSolitaer = false;
-                    long zahl = teiler[i].get(j);
-                    if (zahl > 0) {
-                        iSolitaer = true;
-                        for (int k = teiler.length - 1; k > 1; --k) {
-                            if (i != k) {
-                                int index = teiler[k].indexOf(zahl);
-                                if (index != -1) {
-                                    iSolitaer = false;
-                                    break;
+            if (nochNichtGefunden.contains((Integer) i)) {
+                if (teiler[i].size() > 1) {
+                    // indirekten Solitär suchen
+                    for (int j = 0; j < teiler[i].size(); ++j) {
+                        boolean iSolitaer = false;
+                        long zahl = teiler[i].get(j);
+                        if (zahl > 0) {
+                            iSolitaer = true;
+                            for (int k = teiler.length - 1; k > 1; --k) {
+                                if (i != k) {
+                                    int index = teiler[k].indexOf(zahl);
+                                    if (index != -1) {
+                                        iSolitaer = false;
+                                        break;
+                                    }
                                 }
                             }
                         }
-                    }
-                    if (iSolitaer) {
-                        // statt über Index über den Wert entfernen
-                        nochNichtGefunden.remove((Integer) i);
-                        blockZahl(teiler, zahl);
-                        break;
+                        if (iSolitaer) {
+                            // statt über Index über den Wert entfernen
+                            nochNichtGefunden.remove((Integer) i);
+                            blockZahl(teiler, zahl);
+                            break;
+                        }
                     }
                 }
             }
         }
         // und jetzt höre ich auf, nachdem 50603, 40301 und zuletzt 3948 falsch waren, verfeinere ich nicht mehr mit Permutationen und sowas
         // 3948 war sowieso falsch, ich durfte ja nicht Fach 1 betrachten, damit ist es nun 3953
-        // und jetzt plötzlich 40306??
-        System.out.print("Nach Solitärentfernung für solitäre Vielfache: ");
+        // und jetzt plötzlich 40306?? falsch, wird schon stimmen, muss jetzt doch über Permutationen den Rest machen
+        System.out.println("Nach Entfernung aller Fächer für die es aßer dem 1er-FAch nur noch eine Möglichkeit gab: ");
         show(teiler, nochNichtGefunden);
-        for (int i = teiler.length - 1; i > 0; --i) {
-            // und hier muss ich auf jeden Fall wieder abwärts suchen
-            // weil die größeren Zahlen zuerst abgearbeitet werden müssen, weil die kleineren brauche ich für die kleineren Teiler
-            /*
-            [3, -4, -5, -6, -7]
-            [-4, -6]
-            [3, -6]
-            [-4]
-            [-5]
-
-            [2]
-             */
-            // nein ich teste aufwärts, ob das besser ist
-            // weil die kleineren vielleicht unflexibler sind und die größeren auch weiter unten d.h. optisch noch vielleicht besser gehen
-            /*
-            [-5, -6, -7, -8, 9]
-            [-6, -8]
-            [-6, 9]
-            [-8]
-            [-5]
-
-            [2]
-            */
-            // beides ist falsch, ich muss eigentlich wählen, welche Zahl ich nehmen kann, die ich später nicht mehr verwenden kann
-            // ich muss also noch weiter das analysieren
-            // wenn ich wüßte, dass entweder oder funktioniert ... ich probiere es, aber dann höre ich auf mit dem Programm
-            // abwärts
-            //for (int j = teiler[i].size() - 1; j >= 0 ; --j)
-            // aufwärts
-            for (int j = 0; j < teiler[i].size(); ++j) {
-                int jj = aufwaertsAuswaehlen ? j : teiler[i].size() - 1 - j;
-                if (teiler[i].size() > 1) {
-                    // hier muss ich natürlich die Solitäre überspringen, die ich oben behandelt habe
-                    long zahl = teiler[i].get(jj);
-                    if (zahl > 0) {
-                        // statt über Index über den Wert entfernen
-                        nochNichtGefunden.remove((Integer) i);
-                        blockZahl(teiler, zahl);
-                        break;
+        */
+        // damit bin ich wieder bei den falschen 40301
+        boolean isDivisible = false;
+        if (nochNichtGefunden.size() > 0) {
+            // jetzt kopiere ich meine ArrayList, damit ich in der Methode das permutativ durchlaufen kann
+            // ArrayList<Long>[] teiler
+            ArrayList<Long>[] teilerPerm = new ArrayList[teiler.length];
+            for (int i = 1; i < teiler.length; ++i) {
+                teilerPerm[i] = new ArrayList<>(teiler[i]);
+            }
+            // und ich entferne alle negativen Werte, weil die interessieren nicht mehr
+            // die Erledigten erledige ich dann wieder mit dem "Flagtest" nochNichtGefunden.contains((Integer) i) in jedem Aufruf
+            for (int i = teilerPerm.length - 1; i > 0; --i) {
+                for (int j = teilerPerm[i].size() - 1; j >= 0; --j) {
+                    if (teilerPerm[i].get(j) < 0) {
+                        teilerPerm[i].remove(j);
                     }
                 }
             }
-        }
-        if ( ! nochNichtGefunden.isEmpty()) {
-            //System.out.print(aufwaertsAuswaehlen ? "1 up: " : "2 down: ");
-            // nur Ausgabe, wenn Korrektur nichts brachte
-            if ( ! aufwaertsAuswaehlen) {
-                System.out.print("2 down: ");
-                show(teiler, nochNichtGefunden);
+            // ich iteriere jetzt durch die "restlichen" Fächer, d.h. die, die noch eine Länge haben
+            // aber die ohne LÄnge schleppe ich mit, damit das mit den Indizes nicht zu verwirrend wird
+            ArrayList<Integer> sizesPerm = new ArrayList<>();
+            ArrayList<Integer> iteratePerm = new ArrayList<>();
+            // Zwangsinitialisierung, damit die Indexe passen sind  mit den Fächern
+            sizesPerm.add(0);
+            iteratePerm.add(0);
+            for (int i = 1; i < teilerPerm.length - 1; ++i) {
+                sizesPerm.add(teilerPerm[i].size());
+                iteratePerm.add(teilerPerm[i].size() > 1 ? 1 : 0);
             }
+            isDivisible = checkAufDivisiblePerm(teilerPerm, sizesPerm, iteratePerm);
+            // 7258 ist es auch nicht
         }
         // die Negierungen wieder aufheben
         for (int j = teiler.length - 1; j > 0; --j) {
             teiler[j].replaceAll(Math::abs);
         }
-        return nochNichtGefunden.isEmpty();
+        return isDivisible;
     }
 
     public static boolean isPrime(long n) {
@@ -279,9 +333,7 @@ public class Euler896 {
         //int ziel = 27;
         System.out.println();
         do {
-            if (checkAufDivisible(teiler, true)) {
-                ++gefunden;
-            } else if (checkAufDivisible(teiler, false)) {
+            if (checkAufDivisible(teiler)) {
                 ++gefunden;
             }
             if (gefunden < ziel) {

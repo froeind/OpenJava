@@ -1,6 +1,7 @@
 import java.util.ArrayList;
 //import java.util.Arrays;
-//import java.util.List;
+import java.util.List;
+//import java.util.stream.Collectors;
 
 public class Euler896 {
 
@@ -20,6 +21,23 @@ public class Euler896 {
             }
         }
         System.out.println("Break für " + nochNichtGefunden);
+        System.out.println();
+    }
+
+    public static void show(ArrayList<Long>[] teilerPerm, ArrayList<Integer> iteratePerm, ArrayList<Integer> sizesPerm) {
+        for (int i = 1; i < teilerPerm.length; ++i) {
+            if (teilerPerm[i].size() > 0) {
+                System.out.println(teilerPerm[i]);
+            }
+        }
+        List<Integer> filtered = iteratePerm.stream()
+                .filter(num -> num != 0)
+                .toList();
+        System.out.println("Iterate " + filtered);
+        filtered = sizesPerm.stream()
+                .filter(num -> num != 0)
+                .toList();
+        System.out.println("To      " + filtered);
         System.out.println();
     }
 
@@ -70,14 +88,16 @@ public class Euler896 {
             }
             if (isDivisible) {
                 // eine Lösung gefunden
+                System.out.println("Lösende Permutation: ");
+                show(teilerPerm, iteratePerm, sizesPerm);
                 return true;
             }
             // die Negierungen wieder aufheben
-            for (int i = 2; i < teilerPerm.length - 1; ++i) {
+            for (int i = 1; i < teilerPerm.length - 1; ++i) {
                 teilerPerm[i].replaceAll(Math::abs);
             }
             // Inkrementierung berechnen und überprüfen
-            for (int i = 0; i < iteratePerm.size(); ++i) {
+            for (int i = 2; i < iteratePerm.size(); ++i) {
                 int inc = iteratePerm.get(i);
                 if (inc > 0) {
                     // nur gültiges Fach nehmen
@@ -97,6 +117,8 @@ public class Euler896 {
                     }
                 }
             }
+            System.out.println("Permutationen: ");
+            show(teilerPerm, iteratePerm, sizesPerm);
         }
     }
 

@@ -7,9 +7,12 @@ public class Euler896 {
 
     // 28.08.2024 Ingo Werner
 
+    static boolean showShow_ = false;
+    static int dummy_ = 0;
+
     public static void show(ArrayList<Long>[] teiler) {
         for (int i = 1; i < teiler.length; ++i) {
-            System.out.println(teiler[i]);
+            System.out.println(i + ":" + teiler[i]);
         }
         System.out.println();
     }
@@ -17,7 +20,7 @@ public class Euler896 {
     public static void show(ArrayList<Long>[] teiler, ArrayList<Integer> nochNichtGefunden) {
         for (int i = 1; i < teiler.length; ++i) {
             if (nochNichtGefunden.contains((Integer) i)) {
-                System.out.println(teiler[i]);
+                System.out.println(i + ":" + teiler[i]);
             }
         }
         System.out.println("Break für " + nochNichtGefunden);
@@ -25,9 +28,11 @@ public class Euler896 {
     }
 
     public static void show(ArrayList<Long>[] teilerPerm, ArrayList<Integer> iteratePerm, ArrayList<Integer> sizesPerm) {
-        for (int i = 1; i < teilerPerm.length; ++i) {
-            if (teilerPerm[i].size() > 0) {
-                System.out.println(teilerPerm[i]);
+        if (showShow_) {
+            for (int i = 1; i < teilerPerm.length; ++i) {
+                if ( ! teilerPerm[i].isEmpty()) {
+                    System.out.println(i + ":" + teilerPerm[i]);
+                }
             }
         }
         List<Integer> filtered = iteratePerm.stream()
@@ -67,9 +72,30 @@ public class Euler896 {
         }
     }
 
-    public static boolean checkAufDivisiblePerm(ArrayList<Long>[] teilerPerm, ArrayList<Integer> sizesPerm, ArrayList<Integer> iteratePerm) {
+    public static void makePositiveAgain(ArrayList<Long>[] teiler) {
+        // die Negierungen wieder aufheben
+        for (int i = 1; i < teiler.length; ++i) {
+            teiler[i].replaceAll(Math::abs);
+        }
+
+    }
+
+    public static boolean checkAufDivisiblePerm(ArrayList<Long>[] teilerPerm, ArrayList<Integer> sizesPerm, ArrayList<Integer> iteratePerm, long allPerm, int lastPerm) {
+        if (teilerPerm[1].getFirst() == 1325) {
+            ////////////////////////////////////////////////////////////////////////// breakpoint
+            dummy_ = 1;
+            ////////////////////////////////////////////////////////////////////////// breakpoint
+        }
+        long countPerm = 0;
         boolean isDivisible = false;
         while (true) {
+            ++countPerm;
+            if (countPerm >= allPerm - 5) {
+                ////////////////////////////////////////////////////////////////////////// breakpoint
+                dummy_ = 1;
+                ////////////////////////////////////////////////////////////////////////// breakpoint
+            }
+            System.out.println("\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\tCheck Permutationen " + allPerm + " " + countPerm);
             isDivisible = true;
             for (int i = 2; i < teilerPerm.length - 1; ++i) {
                 if (teilerPerm[i].size() > 1) {
@@ -93,9 +119,7 @@ public class Euler896 {
                 return true;
             }
             // die Negierungen wieder aufheben
-            for (int i = 1; i < teilerPerm.length - 1; ++i) {
-                teilerPerm[i].replaceAll(Math::abs);
-            }
+            makePositiveAgain(teilerPerm);
             // Inkrementierung berechnen und überprüfen
             for (int i = 2; i < iteratePerm.size(); ++i) {
                 int inc = iteratePerm.get(i);
@@ -110,14 +134,19 @@ public class Euler896 {
                     } else {
                         // weiter geht es nicht, also wieder zurücksetzen und nächstes Fach hochzählen (im nächsten Schleifendurchlauf), wenn es eines gibt
                         iteratePerm.set(i, 1);
-                        if (i == iteratePerm.size() - 1) {
+                        if (i == lastPerm) {
                             // letztes Fach erreicht, Ende der Fahnenstange
+                            // ja, letztes Fach, aber nicht das letzte zu betrachtende
                             return false;
                         }
                     }
                 }
             }
-            System.out.println("Permutationen: ");
+            if (showShow_) {
+                System.out.println("Permutationen: ");
+                show(teilerPerm, iteratePerm, sizesPerm);
+            }
+            System.out.println("Nur Permutationen: ");
             show(teilerPerm, iteratePerm, sizesPerm);
         }
     }
@@ -132,7 +161,9 @@ public class Euler896 {
                 return false;
             }
         }
-        show(teiler);
+        if (showShow_) {
+            show(teiler);
+        }
         // dann alles vom Ende kommend wegstreichen, was eindeutig zu machen ist und gemacht werden muss
         // dazu negiere ich die Zahlen absteigend, so dass sie als Vielfache der Teiler für weitere Betrachtungen ausgeschlossen werden
         // und ich muss mir natürlich merken, was ich gefunden habe
@@ -143,16 +174,34 @@ public class Euler896 {
         // und hier muss ich auch schon die Breaks initialisieren und für die Solitäre gleich wieder freigeben
         // hier brauche ich das 1er-Fach nicht betrachten (das 2er und 3er aber schon, da kann es wie gesehen Konflikte geben, und alle weiteren Fächer auch)
         // also bis "i > 1"
+        if (teiler[1].getFirst() == 1326) {
+            ////////////////////////////////////////////////////////////////////////// breakpoint
+            dummy_ = 1;
+            ////////////////////////////////////////////////////////////////////////// breakpoint
+        }
         for (int i = teiler.length - 1; i > 1; --i) {
             nochNichtGefunden.add(i);
             if (teiler[i].size() == 1) {
+                // wie dumm=kurz gedacht war das, die negativen zuzulassen
+                // und nun ja, der Sonderfall der einelementigen Fächer könnte ich auch mit der folgenden Analyse zusammenfassen, aber ich lasse das jetzt getrennt
+                if (teiler[i].getFirst() < 0) {
+                    makePositiveAgain(teiler);
+                    return false;
+                }
                 // statt über Index über den Wert entfernen
                 nochNichtGefunden.remove((Integer) i);
                 blockZahl(teiler, teiler[i].getFirst());
             }
         }
-        System.out.println("Nach Entfernung aller Fächer für die es von Anfang an nur eine Möglichkeit gab: ");
-        show(teiler, nochNichtGefunden);
+        if (showShow_) {
+            System.out.println("Nach Entfernung aller Fächer für die es von Anfang an nur eine Möglichkeit gab: ");
+            show(teiler, nochNichtGefunden);
+        }
+        if (teiler[1].getFirst() == 1326) {
+            ////////////////////////////////////////////////////////////////////////// breakpoint
+            dummy_ = 1;
+            ////////////////////////////////////////////////////////////////////////// breakpoint
+        }
         // tja und dann eigentlich für alle anderen mit Mindestlänge 2 auch dort Solitäre "zweiter Wahl" suchen, solange bis es keine mehr gibt
         // das steht hier an zweiter Stelle, weil diese Solitäre auch eindeutig ermittelbar sind,
         // weil es ja keine Alternative zu ihnen gibt, sie sind ja hier das einzig verfügbare Vielfache
@@ -160,6 +209,7 @@ public class Euler896 {
         // auch hier "i > 1"
         // aber was ich vergessen hatte:
         // ich darf nur unerledigte Fächer durchlaufen, ansonsten würde das "doppelt" erledigt und Zahlen fallen weg
+        // und wenn in einem Fach, das noch nicht geklärt ist, nur noch negative Zahlen auftauchen, dann muss ich ja auch abbrechen
         boolean nochNichtFertig = true;
         while (nochNichtFertig) {
             nochNichtFertig = false;
@@ -181,13 +231,23 @@ public class Euler896 {
                             nochNichtGefunden.remove((Integer) i);
                             blockZahl(teiler, solitaer);
                             nochNichtFertig = true;
+                        } else if (countPositiv == 0) {
+                            makePositiveAgain(teiler);
+                            return false;
                         }
                     }
                 }
             }
         }
-        System.out.println("Nach Entfernung aller Fächer für die es sukzessive dann nur noch eine Möglichkeit gab: ");
-        show(teiler, nochNichtGefunden);
+        if (showShow_) {
+            System.out.println("Nach Entfernung aller Fächer für die es sukzessive dann nur noch eine Möglichkeit gab: ");
+            show(teiler, nochNichtGefunden);
+        }
+        if (teiler[1].getFirst() == -1326) {
+            ////////////////////////////////////////////////////////////////////////// breakpoint
+            dummy_ = 1;
+            ////////////////////////////////////////////////////////////////////////// breakpoint
+        }
         // und dann als drittes nochmal für alle anderen mit Mindestlänge 2 auch indirekte Solitäre suchen, da reicht ein Durchlauf, weil sich da dabei nichts ändert
         // indirekte Solitäre sind Zahlen, die nur in diesem einen Fach auftauchen (außer dem 1er-Fach natürlich), also teilerfremd zu den anderen Fächern sind
         // wenn ich das weiter verfeinere, dann lande ich bei den Ausnahmefächern 2 und 3, da sind ja immer ganz viele dabei, und auch 5 oder 7
@@ -197,7 +257,7 @@ public class Euler896 {
         // weil ich das 1er-Fach ja nicht betrachte und dort alle Zahlen drin sind, d.h. es gibt ja eigentlich gar keine "richtigen" Solitäre
         // ausgenommen den Primzahlen größer der größten Zahl, die sitzen nur im 1er-Fach und bei mehr als zwei wird das ja schon außerhalb geregelt
         // ABER ich habe dabei einen Denkfehler gemacht:
-        // wer sagt denn, dass dieser indirekte Solitär nicht im 1er-Fach benötigt wird, d.h. diese Auwahl darf ich eben nicht treffen
+        // -> wer sagt denn, dass dieser indirekte Solitär nicht im 1er-Fach benötigt wird, d.h. diese Auswahl darf ich eben nicht treffen
         /*
         for (int i = teiler.length - 1; i > 1; --i) {
             if (nochNichtGefunden.contains((Integer) i)) {
@@ -231,12 +291,25 @@ public class Euler896 {
         // und jetzt höre ich auf, nachdem 50603, 40301 und zuletzt 3948 falsch waren, verfeinere ich nicht mehr mit Permutationen und sowas
         // 3948 war sowieso falsch, ich durfte ja nicht Fach 1 betrachten, damit ist es nun 3953
         // und jetzt plötzlich 40306?? falsch, wird schon stimmen, muss jetzt doch über Permutationen den Rest machen
-        System.out.println("Nach Entfernung aller Fächer für die es aßer dem 1er-FAch nur noch eine Möglichkeit gab: ");
+        System.out.println("Nach Entfernung aller Fächer für die es außer dem 1er-Fach nur noch eine Möglichkeit gab: ");
         show(teiler, nochNichtGefunden);
         */
         // damit bin ich wieder bei den falschen 40301
-        boolean isDivisible = false;
-        if (nochNichtGefunden.size() > 0) {
+        // und damit dann doch bei Brut Force über Permutaionen
+        // aber das ist doch nur letztes Mittel der Wahl
+        // weil ich dort in riesengroßen Berechnungen/Schleifen lande
+        // muss ich zuvor noch mehr Sonderfälle abhandeln
+        // 1. es gibt noch den Fall, dass Vielfache an zuviel Stellen gebraucht werden
+        // bei 53776813 .. 53776848 gibt es die Vielfache 53776820 und 53776840, die beide für die Teiler 5, 10 und 20 gebraucht werden
+        // d.h. das kann ich schon vor den Permutationen ermitteln, dass dieses 'range' nicht funktioniert
+        // dazu muss ich für Fach-Länge 2 die zwei Vielfachen betrachten und merken und nachsehen, ob diese in mindestens 3 Fächern der Länge 2 auftauchen
+        // dann kann ich abbrechen
+        // verallgemeinert ist das dann:
+        // ich betrachte für Fach-Länge N die N Vielfachen und sehe nach, ob diese N in mindestens N+1 Fächern der Länge N auftauchen
+        // dann kann ich abbrechen
+        // für diese Betrachtungen verwende ich die vorbereitenden Berechnungen für die Permutationen
+        boolean isDivisible = true;
+        if ( ! nochNichtGefunden.isEmpty()) {
             // jetzt kopiere ich meine ArrayList, damit ich in der Methode das permutativ durchlaufen kann
             // ArrayList<Long>[] teiler
             ArrayList<Long>[] teilerPerm = new ArrayList[teiler.length];
@@ -245,6 +318,11 @@ public class Euler896 {
             }
             // und ich entferne alle negativen Werte, weil die interessieren nicht mehr
             // die Erledigten erledige ich dann wieder mit dem "Flagtest" nochNichtGefunden.contains((Integer) i) in jedem Aufruf
+            if (teiler[1].getFirst() == -1326) {
+                ////////////////////////////////////////////////////////////////////////// breakpoint
+                dummy_ = 1;
+                ////////////////////////////////////////////////////////////////////////// breakpoint
+            }
             for (int i = teilerPerm.length - 1; i > 0; --i) {
                 for (int j = teilerPerm[i].size() - 1; j >= 0; --j) {
                     if (teilerPerm[i].get(j) < 0) {
@@ -259,17 +337,60 @@ public class Euler896 {
             // Zwangsinitialisierung, damit die Indexe passen sind  mit den Fächern
             sizesPerm.add(0);
             iteratePerm.add(0);
+            long allPerm = 1;
+            int lastPerm = -1;
             for (int i = 1; i < teilerPerm.length - 1; ++i) {
-                sizesPerm.add(teilerPerm[i].size());
-                iteratePerm.add(teilerPerm[i].size() > 1 ? 1 : 0);
+                int size = teilerPerm[i].size();
+                if ((i > 1) && (size > 1)) {
+                    allPerm *= size;
+                    // ich muss mir das letzte zu betrachtende Fac merken
+                    lastPerm = i;
+                }
+                sizesPerm.add(size);
+                iteratePerm.add(size > 1 ? 1 : 0);
             }
-            isDivisible = checkAufDivisiblePerm(teilerPerm, sizesPerm, iteratePerm);
+            // jetzt untersuche ich auf ein Zuviel an Bedarf
+            // die Frage bleibt aber, wenn ich so keinen Abbruch finde, wie reduziere ich die Permutationen?
+            // so:
+            // ich betrachte also für Fach-Länge N die N Vielfachen
+            // wenn ich für N weniger als N Fächer finde, wo die N drin sind, dann kann ich keine Aussage tätigen, weil in anderern Fächern auch der Bedarf nach den N Stück ist
+            // wenn ich für N genau N Fächer finde, dann muss ich diese N auch nehmen und überall blocken
+            // dann reduziere ich den Umfang der Permutationen, das muss aber ja nicht sein, aber mal schau'n
+            // wenn diese N in mehr als N, also mindestens N+1 Fächern der Länge N auftauchen, dann kann es keine Lösung geben
+            for (int i = teiler.length - 1; i > 1; --i) {
+            for (int i = teiler.length - 1; i > 1; --i) {
+                if (nochNichtGefunden.contains((Integer) i)) {
+                    if (teiler[i].size() > 1) {
+                        // Solitäre suchen
+                        int countPositiv = 0;
+                        long solitaer = -1;
+                        for (int j = 0; j < teiler[i].size(); ++j) {
+                            long zahl = teiler[i].get(j);
+                            if (zahl > 0) {
+                                ++countPositiv;
+                                solitaer = zahl;
+                            }
+                        }
+                        if (countPositiv == 1) {
+                            // statt über Index über den Wert entfernen
+                            nochNichtGefunden.remove((Integer) i);
+                            blockZahl(teiler, solitaer);
+                            nochNichtFertig = true;
+                        } else if (countPositiv == 0) {
+                            makePositiveAgain(teiler);
+                            return false;
+                        }
+                    }
+                }
+            }
+            // ab hier wirklich die Permutationsbetrachtungen
+            isDivisible = checkAufDivisiblePerm(teilerPerm, sizesPerm, iteratePerm, allPerm, lastPerm);
             // 7258 ist es auch nicht
         }
         // die Negierungen wieder aufheben
-        for (int j = teiler.length - 1; j > 0; --j) {
-            teiler[j].replaceAll(Math::abs);
-        }
+        makePositiveAgain(teiler);
+        //if (isDivisible) {
+        //}
         return isDivisible;
     }
 
@@ -353,10 +474,19 @@ public class Euler896 {
         int primsCount = 0;
         int ziel = dim;
         //int ziel = 27;
-        System.out.println();
+        if (showShow_) {
+            System.out.println();
+        }
         do {
+            if (start == 1326) {
+                ////////////////////////////////////////////////////////////////////////// breakpoint
+                dummy_ = 1;
+                ////////////////////////////////////////////////////////////////////////// breakpoint
+            }
+            showShow_ = false;
             if (checkAufDivisible(teiler)) {
                 ++gefunden;
+                showShow_ = true;
             }
             if (gefunden < ziel) {
                 do {
@@ -375,12 +505,16 @@ public class Euler896 {
                     }
                     refreshTeiler(teiler, end, true);
                     System.out.println("Primzahlkontrolle: " + teiler[1]);
-                    int rr=1;
                 } while (primsCount >= 2);
                 //show(teiler);
             }
-            System.out.println("\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\tAktuelle Position vor Ziel ist im Moment " + gefunden);
-            System.out.println();
+            if (showShow_) {
+                for (int i = 1; i < 36; ++i) {
+                    System.out.println("\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\tAktuelle Position vor Ziel ist im Moment " + gefunden);
+                }
+                System.out.println();
+            }
+            showShow_ = false;
         } while (gefunden < ziel);
         // das sollte dann die Lösung sein
         System.out.println();
